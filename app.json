@@ -22,7 +22,13 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-video"
-    ]
+      "expo-video",
+      "expo-sqlite"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "21b55c1b-7fef-471e-a9df-0ec8dd336afa"
+      }
+    }
   }
 }

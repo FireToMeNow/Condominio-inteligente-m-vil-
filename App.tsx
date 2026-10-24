@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
 import {
@@ -12,26 +12,15 @@ import {
   TextInput,
   View,
 } from 'react-native';
-
-type ReportCategory =
-  | 'Vehículo'
-  | 'Mascota'
-  | 'Área común'
-  | 'Objeto perdido'
-  | 'Visitante'
-  | 'Otro';
-
-type ReportStatus = 'Pendiente' | 'En revisión' | 'Resuelto';
-
-type Report = {
-  id: number;
-  category: ReportCategory;
-  details: string;
-  evidenceUri?: string;
-  evidenceName?: string;
-  status: ReportStatus;
-  createdAt: Date;
-};
+import { reportRepository } from './src/repositories/reportRepository';
+import type {
+  Profile,
+  Report,
+  ReportCategory,
+  ReportStatus,
+  UserRole,
+} from './src/types';
+import { roleLabels } from './src/types';
 
 const categories: ReportCategory[] = [
   'Vehículo',
@@ -48,6 +37,19 @@ export default function App() {
   const [category, setCategory] = useState<ReportCategory>('Vehículo');
   const [details, setDetails] = useState('');
   const [evidence, setEvidence] = useState<ImagePicker.ImagePickerAsset>();
+  const [currentRole, setCurrentRole] = useState<UserRole>('resident');
+  const currentProfile: Profile = {
+    id: 'demo-user',
+    fullName: 'Usuario demo',
+    role: currentRole,
+    residence: currentRole === 'resident' ? 'Torre A · Unidad 102' : undefined,
+  };
+
+  useEffect(() => {
+    reportRepository.list().then(setReports).catch(() => {
+      Alert.alert('Persistencia', 'No se pudieron cargar los reportes guardados.');
+    });
+  }, []);
 
   const addEvidence = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -81,28 +83,34 @@ export default function App() {
     if (!result.canceled) setEvidence(result.assets[0]);
   };
 
-  const saveReport = () => {
+  const saveReport = async () => {
     if (!details.trim() && !evidence) {
       Alert.alert('Falta información', 'Agrega detalles o evidencia.');
       return;
     }
 
-    setReports((current) => [
-      {
-        id: Date.now(),
-        category,
-        details: details.trim() || 'Sin descripción',
-        evidenceUri: evidence?.uri,
-        evidenceName: evidence?.fileName ?? undefined,
-        status: 'Pendiente',
-        createdAt: new Date(),
-      },
-      ...current,
-    ]);
-    setDetails('');
-    setEvidence(undefined);
-    setCategory('Vehículo');
-    setReportModalVisible(false);
+    const report: Report = {
+      id: String(Date.now()),
+      category,
+      details: details.trim() || 'Sin descripción',
+      evidenceUri: evidence?.uri,
+      evidenceName: evidence?.fileName ?? undefined,
+      evidenceType: evidence?.mimeType ?? undefined,
+      status: 'Pendiente',
+      createdAt: new Date().toISOString(),
+      createdBy: currentProfile.id,
+    };
+
+    try {
+      const nextReports = await reportRepository.save(report);
+      setReports(nextReports);
+      setDetails('');
+      setEvidence(undefined);
+      setCategory('Vehículo');
+      setReportModalVisible(false);
+    } catch {
+      Alert.alert('Persistencia', 'No se pudo guardar el reporte en el dispositivo.');
+    }
   };
 
   return (
@@ -112,6 +120,19 @@ export default function App() {
         <Text style={styles.eyebrow}>SEGURIDAD Y CONVIVENCIA</Text>
         <Text style={styles.title}>Condominio</Text>
         <Text style={styles.subtitle}>Incidencias y atención comunitaria</Text>
+        <View style={styles.roleSelector}>
+          {(['resident', 'guard', 'administrator'] as UserRole[]).map((role) => (
+            <Pressable
+              key={role}
+              onPress={() => setCurrentRole(role)}
+              style={[styles.roleChip, currentRole === role && styles.roleChipSelected]}
+            >
+              <Text style={[styles.roleText, currentRole === role && styles.roleTextSelected]}>
+                {roleLabels[role]}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
 
         <View style={styles.actionPanel}>
           <View style={styles.actionCopy}>
@@ -239,6 +260,18 @@ const styles = StyleSheet.create({
   eyebrow: { color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1 },
   title: { marginTop: 5, color: colors.ink, fontSize: 30, fontWeight: '800' },
   subtitle: { marginTop: 6, color: '#52625C', fontSize: 15, lineHeight: 21 },
+  roleSelector: { marginTop: 14, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  roleChip: {
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: 6,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  roleChipSelected: { borderColor: colors.green, backgroundColor: '#E9F0EB' },
+  roleText: { color: '#52625C', fontSize: 12 },
+  roleTextSelected: { color: colors.green, fontWeight: '700' },
   actionPanel: {
     marginTop: 22,
     padding: 18,
