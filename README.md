@@ -4,10 +4,11 @@ Aplicacion movil con React Native, Expo y TypeScript para registrar incidencias 
 
 ## Estado actual
 
-- Permite redactar un reporte y elegir una categoria.
-- Permite tomar una foto, grabar un video o elegir un archivo de la galeria.
-- Los reportes viven solo en memoria y desaparecen al cerrar la app.
-- No hay cuentas, roles, envio a guardias, almacenamiento remoto ni integracion con camaras IP todavia.
+- Crear reportes de vehiculos, mascotas, areas comunes, objetos perdidos, visitantes u otros asuntos.
+- Adjuntar una foto o un video desde la camara o la galeria.
+- Consultar la actividad reciente dentro de la sesion actual.
+- Los reportes se mantienen solo en memoria hasta conectar el backend.
+- La app todavia no incluye autenticacion, roles, alertas ni integracion de camaras IP.
 
 ## Ejecutar en desarrollo
 
@@ -24,15 +25,12 @@ Desde Expo Go puedes escanear el codigo QR para probar en un dispositivo. Para c
 npm run typecheck
 ```
 
-
 ## Tecnologias previstas
 
 - React Native con Expo y TypeScript para iOS y Android.
 - Expo Image Picker para fotos y videos en la etapa inicial.
 - Supabase para autenticacion, PostgreSQL, almacenamiento y notificaciones.
 - Servicios de vision artificial independientes para analizar clips aprobados.
-
-El plugin anterior ya no forma parte de esta implementacion.
 
 ## Estructura inicial
 
